@@ -338,46 +338,49 @@ function hasMoreToCheck(s) {
 }
 
 async function loadBatch() {
-  if (!searchState) return;
+  const s = searchState; // snapshot — global searchState may change out from under
+                          // us at any await if the user picks a different place
+                          // mid-batch (e.g. clicks "Choose a different place")
+  if (!s) return;
   setLoading(true);
 
   try {
     let pagesThisBatch = 0;
     let hitApiCap = false;
 
-    while (pagesThisBatch < PAGES_PER_BATCH && hasMoreToCheck(searchState)) {
+    while (pagesThisBatch < PAGES_PER_BATCH && hasMoreToCheck(s)) {
       setStatus(
         "Searching projects in " +
-          searchState.placeName +
+          s.placeName +
           "... " +
-          searchState.matchedCount +
+          s.matchedCount +
           " found so far (checked " +
-          searchState.checked +
+          s.checked +
           " of " +
-          (searchState.totalResults === null ? "?" : searchState.totalResults) +
+          (s.totalResults === null ? "?" : s.totalResults) +
           ")",
       );
 
       let projData;
       try {
-        projData = await fetchProjects(
-          searchState.placeId,
-          searchState.nextPage,
-        );
+        projData = await fetchProjects(s.placeId, s.nextPage);
       } catch (e) {
         throw new Error("iNaturalist request failed: " + e.message);
       }
 
+      // Bail out if a different search has started since this fetch began —
+      // otherwise we'd be mutating/rendering a batch nobody's looking at anymore.
+      if (searchState !== s) return;
+
       const pageResults = projData.results || [];
-      searchState.totalResults =
-        projData.total_results ?? searchState.checked + pageResults.length;
-      searchState.checked += pageResults.length;
-      searchState.nextPage++;
+      s.totalResults = projData.total_results ?? s.checked + pageResults.length;
+      s.checked += pageResults.length;
+      s.nextPage++;
       pagesThisBatch++;
       if (
-        searchState.checked >= API_RESULT_CAP &&
-        searchState.totalResults !== null &&
-        searchState.checked < searchState.totalResults
+        s.checked >= API_RESULT_CAP &&
+        s.totalResults !== null &&
+        s.checked < s.totalResults
       )
         hitApiCap = true;
 
@@ -393,54 +396,58 @@ async function loadBatch() {
           "beforeend",
           newlyMatched.map(renderCard).join(""),
         );
-        searchState.matchedCount += newlyMatched.length;
+        s.matchedCount += newlyMatched.length;
       }
 
       if (!pageResults.length) break; // no more pages
     }
 
-    const hasMore = hasMoreToCheck(searchState);
+    if (searchState !== s) return; // stale by the time the loop finished, too
+
+    const hasMore = hasMoreToCheck(s);
     const capNote = hitApiCap
       ? " (iNaturalist caps search results at " +
         API_RESULT_CAP.toLocaleString() +
         " — stopping here.)"
       : "";
     setStatus(
-      searchState.matchedCount +
+      s.matchedCount +
         " current/upcoming project" +
-        (searchState.matchedCount === 1 ? "" : "s") +
+        (s.matchedCount === 1 ? "" : "s") +
         " found in " +
-        searchState.placeName +
+        s.placeName +
         " (checked " +
-        searchState.checked +
+        s.checked +
         " of " +
-        searchState.totalResults +
+        s.totalResults +
         " projects there)." +
         capNote,
     );
 
     const noResultsHtml =
-      searchState.matchedCount === 0
+      s.matchedCount === 0
         ? '<p style="color: var(--text-secondary); font-size: 14px;">No current or upcoming projects found in ' +
-          escapeHtml(searchState.placeName) +
+          escapeHtml(s.placeName) +
           (hasMore ? " yet — try loading more." : ".") +
           "</p>"
         : "";
 
     const loadMoreHtml = hasMore
       ? '<button id="load-more" style="display:block; margin: 1rem auto 0;">Load more (checked ' +
-        searchState.checked +
+        s.checked +
         " of " +
-        searchState.totalResults +
+        s.totalResults +
         ")</button>"
       : "";
 
     results.innerHTML = noResultsHtml + loadMoreHtml;
   } catch (err) {
-    setStatus("Error: " + err.message, true);
-    console.error(err);
+    if (searchState === s) {
+      setStatus("Error: " + err.message, true);
+      console.error(err);
+    }
   } finally {
-    setLoading(false);
+    if (searchState === s) setLoading(false);
   }
 }
 
