@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iNaturalist projects near a place</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Find upcoming iNaturalist projects in a place</h1>
+
+<div class="row">
+  <div class="place-wrap">
+    <input id="place" type="text" placeholder="e.g. Sonoma County" autocomplete="off" />
+    <div id="suggestions"></div>
+  </div>
+  <button id="go">Find projects</button>
+</div>
+<p class="note">
+  ℹ️ For best results, it's recommended to use your <strong>county/district</strong>.
+  Searching on a smaller scale (city, park) may not return all local results.
+  Only returns projects that have both a location and a date, like local bioblitzes.
+</p>
+
+<div id="back-row"><button id="back">&larr; Choose a different place</button></div>
+<div id="status"></div>
+<div id="cards"></div>
+<div id="results"></div>
+
+<footer>
+  Data from the <a href="https://api.inaturalist.org/v2/docs/" target="_blank" rel="noopener">iNaturalist API</a>.
+  Tool by <a href="https://github.com/tolype/inat-upcoming-projects" target="_blank" rel="noopener">tolype on GitHub</a>.
+</footer>
+
+<script src="app.js"></script>
+
+</body>
+</html>
