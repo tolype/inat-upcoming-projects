@@ -1,15 +1,44 @@
 :root {
+  color-scheme: light;
+  --background: #fff;
+  --surface: #fff;
+  --surface-muted: #f5f5f5;
+  --surface-hover: #eee;
   --border: #ddd;
+  --text-primary: #1a1a1a;
   --text-secondary: #666;
   --text-danger: #b3261e;
+  --focus: #397d20;
+  --shadow: rgba(0, 0, 0, 0.08);
   --radius: 8px;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #151713;
+    --surface: #1d201b;
+    --surface-muted: #292d26;
+    --surface-hover: #343930;
+    --border: #454b40;
+    --text-primary: #f2f4ef;
+    --text-secondary: #b4bcad;
+    --text-danger: #ffb4ab;
+    --focus: #9ccc65;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   max-width: 640px;
   margin: 2rem auto;
   padding: 0 1rem;
-  color: #1a1a1a;
+  color: var(--text-primary);
+  background: var(--background);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
 }
 h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
 .row { display: flex; gap: 8px; margin-bottom: 1rem; position: relative; }
@@ -21,16 +50,27 @@ input {
   border-radius: var(--radius);
   font-size: 14px;
   box-sizing: border-box;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+input::placeholder {
+  color: var(--text-secondary);
+}
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 #suggestions {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px var(--shadow);
   max-height: 260px;
   overflow-y: auto;
   z-index: 10;
@@ -42,21 +82,23 @@ input {
   text-align: left;
   border: none;
   background: none;
+  color: var(--text-primary);
   padding: 8px 10px;
   font-size: 14px;
   cursor: pointer;
   border-radius: 0;
 }
-#suggestions button:hover { background: #f5f5f5; }
+#suggestions button:hover { background: var(--surface-muted); }
 button {
   padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #f5f5f5;
+  color: var(--text-primary);
+  background: var(--surface-muted);
   cursor: pointer;
   font-size: 14px;
 }
-button:hover { background: #eee; }
+button:hover { background: var(--surface-hover); }
 button:disabled { opacity: 0.5; cursor: default; }
 #status { font-size: 13px; color: var(--text-secondary); margin-bottom: 1rem; min-height: 1.2em; }
 
@@ -68,11 +110,12 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
   margin-bottom: 6px;
-  background: white;
+  color: var(--text-primary);
+  background: var(--surface);
   cursor: pointer;
   font-size: 14px;
 }
-.place-option:hover { background: #fafafa; }
+.place-option:hover { background: var(--surface-muted); }
 .place-option .sub { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 
 .card {
@@ -85,14 +128,14 @@ button:disabled { opacity: 0.5; cursor: default; }
   text-decoration: none;
   color: inherit;
 }
-.card:hover { background: #fafafa; }
+.card:hover { background: var(--surface-muted); }
 .card img {
   width: 64px;
   height: 64px;
   object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
-  background: #eee;
+  background: var(--surface-hover);
 }
 .card-body { min-width: 0; }
 .card p.name { font-weight: 600; font-size: 14px; margin: 0 0 4px; }
@@ -112,3 +155,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 footer { margin-top: 2rem; font-size: 12px; color: var(--text-secondary); }
 footer a { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+}
