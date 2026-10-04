@@ -112,14 +112,25 @@ function getProjectDateTimestamp(project, field) {
   return Number.isNaN(ts) ? null : ts;
 }
 
+function getProjectDates(project) {
+  let d1 = getProjectDateTimestamp(project, "d1");
+  let d2 = getProjectDateTimestamp(project, "d2");
+  // Single-day events might use "observed_on" without any d1/d2 range;
+  // treat it as both the start and end date when there's no d1/d2.
+  if (d1 === null && d2 === null) {
+    const observedOn = getProjectDateTimestamp(project, "observed_on");
+    if (observedOn !== null) {
+      d1 = observedOn;
+      d2 = observedOn;
+    }
+  }
+  return { d1, d2 };
+}
+
 function getCurrentOrUpcomingProjects(projects) {
   const now = Date.now();
   return projects
-    .map((p) => ({
-      ...p,
-      d1: getProjectDateTimestamp(p, "d1"),
-      d2: getProjectDateTimestamp(p, "d2"),
-    }))
+    .map((p) => ({ ...p, ...getProjectDates(p) }))
     .filter((p) => {
       const isCurrentOrUpcoming =
         (p.d1 !== null && p.d1 >= now) || (p.d2 !== null && p.d2 >= now);
@@ -287,7 +298,11 @@ function renderCard(p) {
   }
 
   let dateLine = "";
-  if (p.d1) {
+  if (p.d1 && p.d2 && p.d1 === p.d2) {
+    // Single-day event (e.g. derived from "observed_on") — one date, not a range.
+    dateLine =
+      '<p class="desc" style="margin-top: 2px;">' + formatDate(p.d1) + "</p>";
+  } else if (p.d1) {
     let range = "Starts " + formatDate(p.d1);
     if (p.d2) range = formatDate(p.d1) + " – " + formatDate(p.d2);
     dateLine = '<p class="desc" style="margin-top: 2px;">' + range + "</p>";
@@ -339,8 +354,8 @@ function hasMoreToCheck(s) {
 
 async function loadBatch() {
   const s = searchState; // snapshot — global searchState may change out from under
-                          // us at any await if the user picks a different place
-                          // mid-batch (e.g. clicks "Choose a different place")
+  // us at any await if the user picks a different place
+  // mid-batch (e.g. clicks "Choose a different place")
   if (!s) return;
   setLoading(true);
 

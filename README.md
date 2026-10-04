@@ -29,6 +29,10 @@ Currently filters results to projects that have a start and/or end date that is 
 Also filters out any events that have a total span of longer than a year,
 with the intent of hiding long-term, less "eventlike" projects, while still including interesting results like yearlong capybara surveys.
 
+Projects seemingly don't always store their date the same way: most use a `d1`/`d2` range,
+but some one-day events use a single `observed_on` field instead.
+And there might be other date conventions - we'll see!
+
 ### API quirks
 
 `GET /projects` had some quirky behavior with `fields`.
