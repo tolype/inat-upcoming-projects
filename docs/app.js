@@ -101,22 +101,28 @@ async function fetchProjects(placeId, page) {
   return res.json();
 }
 
-// search_parameters is the field that reliably carries d1/d2 (rule_preferences
-// doesn't, even with fields=all — only holds quality_grade on the search endpoint).
-// Returns a timestamp (number), not a Date — hence "Timestamp" in the name.
 function getProjectDateTimestamp(project, field) {
   const params = project.search_parameters || [];
   const match = params.find((r) => r.field === field);
   if (!match || !match.value) return null;
-  const ts = Date.parse(match.value);
-  return Number.isNaN(ts) ? null : ts;
+  // some date-related API fields may return either a date or a datetime;
+  // drop the time and interpret everything as a date in the event's local time
+  // (avoids trickiness with JS parsing plain dates as UTC and datetimes as local)
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(match.value));
+  if (!dateMatch) return null;
+  return new Date(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]) - 1, // Date input months are 0-indexed
+    Number(dateMatch[3]),
+  ).getTime();
 }
 
+// read dates from search_parameters (d1/d2) and fall back to observed_on
+// (projects may have both, one, or neither of them)
 function getProjectDates(project) {
   let d1 = getProjectDateTimestamp(project, "d1");
   let d2 = getProjectDateTimestamp(project, "d2");
-  // Single-day events might use "observed_on" without any d1/d2 range;
-  // treat it as both the start and end date when there's no d1/d2.
+  // if no d1/d2, look at observed_on; if it's present, treat it as both start & end date
   if (d1 === null && d2 === null) {
     const observedOn = getProjectDateTimestamp(project, "observed_on");
     if (observedOn !== null) {
@@ -128,12 +134,20 @@ function getProjectDates(project) {
 }
 
 function getCurrentOrUpcomingProjects(projects) {
-  const now = Date.now();
+  // Dates are local-midnight calendar dates, so compare against the start of today;
+  // an event happening today stays listed all day (even past its end time)
+  const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  ).getTime();
   return projects
     .map((p) => ({ ...p, ...getProjectDates(p) }))
     .filter((p) => {
       const isCurrentOrUpcoming =
-        (p.d1 !== null && p.d1 >= now) || (p.d2 !== null && p.d2 >= now);
+        (p.d1 !== null && p.d1 >= startOfToday) ||
+        (p.d2 !== null && p.d2 >= startOfToday);
       if (!isCurrentOrUpcoming) return false;
       // Exclude long-running, multi-year campaigns in favor of discrete/annual
       // events — only applies when we have both bounds to measure a span from.

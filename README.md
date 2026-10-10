@@ -30,8 +30,16 @@ Also filters out any events that have a total span of longer than a year,
 with the intent of hiding long-term, less "eventlike" projects, while still including interesting results like yearlong capybara surveys.
 
 Projects seemingly don't always store their date the same way: most use a `d1`/`d2` range,
-but some one-day events use a single `observed_on` field instead.
+while some one-day events use a single `observed_on` field instead (or both).
 And there might be other date conventions - we'll see!
+
+### Dates
+
+Dates are displayed in the project's local timezone - not the user's timezone.
+
+Currently, we look at the date of the event only and ignore its time.
+This means that, if an event ended earlier today, it would still show up for today, until the end of day.
+Can adjust this later if it ever becomes necessary.
 
 ### API quirks
 
